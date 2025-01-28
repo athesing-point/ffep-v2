@@ -1,0 +1,13 @@
+{
+  "name": "ffep-v2-client",
+  "version": "1.0.0",
+  "description": "Fast Form Entry Point - Client Side Version",
+  "main": "src/ffep.js",
+  "scripts": {
+    "build": "esbuild src/ffep.js --bundle --minify --outfile=dist/ffep.js",
+    "dev": "esbuild src/ffep.js --bundle --watch --outfile=dist/ffep.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0"
+  }
+}
