@@ -32,25 +32,28 @@ class FFEP {
   }
 
   setupAutocomplete() {
-    // Create autocomplete container
-    this.autocompleteContainer = document.createElement("div");
-    this.autocompleteContainer.className = "ffep-autocomplete";
-    this.autocompleteContainer.style.cssText = `
-      position: absolute;
-      width: 100%;
-      max-height: 200px;
-      overflow-y: auto;
-      background: white;
-      border: 1px solid #ddd;
-      border-top: none;
-      border-radius: 0 0 4px 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      z-index: 1000;
-      display: none;
-    `;
+    // Find existing autocomplete container created in Webflow
+    this.autocompleteContainer = document.querySelector(".ffep-autocomplete");
+    if (!this.autocompleteContainer) {
+      console.error("Autocomplete container with class 'ffep-autocomplete' not found");
+      return;
+    }
 
-    this.addressInput.parentNode.style.position = "relative";
-    this.addressInput.parentNode.appendChild(this.autocompleteContainer);
+    /* Required Webflow styles for .ffep-autocomplete:
+     * Position: Absolute
+     * Display: None (initial state)
+     * Width: 100%
+     * Max Height: 200px
+     * Background: White
+     * Border: 1px solid #ddd
+     * Border Radius: 0 0 4px 4px
+     * Box Shadow: 0 2px 4px rgba(0,0,0,0.1)
+     * Z-Index: 1000
+     * Overflow-Y: Auto
+     *
+     * Parent container (.ffep-autocomplete's parent) needs:
+     * Position: Relative
+     */
 
     // Setup input event listeners
     this.addressInput.addEventListener("input", this.handleInput.bind(this));
