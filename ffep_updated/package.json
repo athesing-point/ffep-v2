@@ -1,0 +1,15 @@
+{
+  "name": "ffep",
+  "version": "1.0.0",
+  "description": "Flexible Form Entry Point - Vanilla JS Implementation",
+  "main": "dist/ffep.min.js",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "serve": "node build.js --serve"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "esbuild-css-modules-plugin": "^3.1.0"
+  }
+}
