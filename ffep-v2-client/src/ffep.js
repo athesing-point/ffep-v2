@@ -1,6 +1,5 @@
 // Constants
-const SMARTY_KEY = "YOUR_SMARTY_KEY"; // Replace with actual key
-const SMARTY_WEBSITE_KEY = "YOUR_SMARTY_WEBSITE_KEY"; // Replace with actual key
+const SMARTY_WEBSITE_KEY = "222770943750704822"; // Replace with actual key
 
 class FFEP {
   constructor() {
@@ -80,6 +79,7 @@ class FFEP {
 
   async handleInput(e) {
     const query = e.target.value;
+    console.log("Input value:", query);
     if (query.length < 3) {
       this.hideSuggestions();
       return;
@@ -87,6 +87,7 @@ class FFEP {
 
     try {
       const suggestions = await this.fetchSuggestions(query);
+      console.log("Received suggestions:", suggestions);
       this.suggestions = suggestions;
       this.showSuggestions();
     } catch (error) {
@@ -95,30 +96,39 @@ class FFEP {
   }
 
   async fetchSuggestions(query) {
-    const response = await fetch(
-      `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
-        "auth-id": SMARTY_KEY,
-        "key": SMARTY_WEBSITE_KEY,
-        "search": query,
-        "source": "all",
-      })}`
-    );
+    const url = `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
+      search: query,
+      key: SMARTY_WEBSITE_KEY,
+      source: "all",
+    })}`;
+    console.log("Fetching from URL:", url);
+
+    const response = await fetch(url);
+    console.log("Response status:", response.status);
 
     if (!response.ok) {
       throw new Error("Failed to fetch suggestions");
     }
 
     const data = await response.json();
+    console.log("Raw API response:", data);
     return data.suggestions || [];
   }
 
   showSuggestions() {
+    console.log("Showing suggestions:", this.suggestions);
     if (!this.suggestions.length) {
+      console.log("No suggestions to show, hiding container");
       this.hideSuggestions();
       return;
     }
 
-    this.autocompleteContainer.innerHTML = this.suggestions
+    if (!this.autocompleteContainer) {
+      console.error("Autocomplete container is null!");
+      return;
+    }
+
+    const html = this.suggestions
       .map(
         (suggestion, index) => `
         <div class="ffep-suggestion ${index === this.selectedIndex ? "selected" : ""}"
@@ -130,6 +140,9 @@ class FFEP {
       )
       .join("");
 
+    console.log("Setting innerHTML:", html);
+    this.autocompleteContainer.innerHTML = html;
+    console.log("Setting display to block");
     this.autocompleteContainer.style.display = "block";
     this.isAutocompleteVisible = true;
 
@@ -209,6 +222,7 @@ class FFEP {
 
 // Initialize FFEP when the DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
+  window.FFEP = FFEP; // Make FFEP available globally
   const ffep = new FFEP();
   ffep.init();
 });
