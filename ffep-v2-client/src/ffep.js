@@ -1,6 +1,5 @@
 // Constants
-const SMARTY_WEBSITE_KEY = "222770943750704822"; // Replace with actual key
-
+const SMARTY_WEBSITE_KEY = "17448046492887615";
 class FFEP {
   constructor() {
     this.form = null;
