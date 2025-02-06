@@ -1,6 +1,8 @@
 // Constants
-// const SMARTY_WEBSITE_KEY = "17448046492887615";
-const SMARTY_WEBSITE_KEY = "17448045555816402";
+const SMARTY_WEBSITE_KEYS = {
+  PDC: "17448046492887615",
+  PDD: "17448045555816402",
+};
 
 class FFEP {
   constructor() {
@@ -10,6 +12,9 @@ class FFEP {
     this.suggestions = [];
     this.selectedIndex = -1;
     this.isAutocompleteVisible = false;
+    // Determine which key to use based on hostname
+    const hostname = window.location.hostname;
+    this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
   }
 
   init() {
@@ -64,17 +69,20 @@ class FFEP {
   setupFormHandling() {
     this.form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const address = this.addressInput.value;
 
-      // Call the onSubmit callback if it exists
-      if (typeof window.onSubmitFfepForm === "function") {
-        window.onSubmitFfepForm(address);
-      }
+      // Get the address and encode it properly for both parameters
+      const addressValue = this.addressInput.value;
+      const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
 
-      // Default form submission behavior
-      const formData = new FormData(this.form);
-      const params = new URLSearchParams(formData);
-      window.location.href = `https://home.point.com/hei?${params.toString()}`;
+      // Get the current URL to determine the TLD
+      const currentUrl = new URL(window.location.href);
+      const targetTLD = currentUrl.hostname.includes(".dev") ? "dev" : "com";
+
+      // Construct URL with both parameters
+      const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
+
+      // Immediately redirect without showing form submission
+      window.location.replace(targetUrl);
     });
   }
 
@@ -99,7 +107,7 @@ class FFEP {
   async fetchSuggestions(query) {
     const url = `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
       search: query,
-      key: SMARTY_WEBSITE_KEY,
+      key: this.smartyKey,
       source: "all",
     })}`;
     console.log("Fetching from URL:", url);
