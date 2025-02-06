@@ -1,0 +1,9 @@
+{
+  "name": "ffep-v2-client",
+  "version": "1.0.0",
+  "description": "Fast Form Entry Point - Client Side Version",
+  "main": "src/ffep.js",
+  "scripts": {
+    "start": "python3 -m http.server 8000"
+  }
+}

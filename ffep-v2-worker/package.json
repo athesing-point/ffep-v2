@@ -1,0 +1,15 @@
+{
+  "name": "ffep-v2-worker",
+  "version": "1.0.0",
+  "description": "Fast Form Entry Point - Worker Version",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build:client": "esbuild src/client/ffep.js --bundle --minify --outfile=dist/ffep.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "wrangler": "^3.0.0"
+  }
+}
