@@ -4,6 +4,19 @@ const SMARTY_WEBSITE_KEYS = {
   PDD: "17448045555816402",
 };
 
+// Debounce helper function
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 class FFEP {
   constructor() {
     this.form = null;
@@ -15,6 +28,9 @@ class FFEP {
     // Determine which key to use based on hostname
     const hostname = window.location.hostname;
     this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
+
+    // Debounce the API calls
+    this.debouncedFetchSuggestions = debounce(this.fetchSuggestions.bind(this), 300);
   }
 
   init() {
@@ -95,16 +111,23 @@ class FFEP {
     }
 
     try {
-      const suggestions = await this.fetchSuggestions(query);
-      console.log("Received suggestions:", suggestions);
-      this.suggestions = suggestions;
-      this.showSuggestions();
+      // Use the debounced version for API calls
+      const suggestions = await this.debouncedFetchSuggestions(query);
+      if (suggestions) {
+        // Check if suggestions were returned (might be null if debounced)
+        console.log("Received suggestions:", suggestions);
+        this.suggestions = suggestions;
+        this.showSuggestions();
+      }
     } catch (error) {
       console.error("Error fetching suggestions:", error);
     }
   }
 
   async fetchSuggestions(query) {
+    // If query is empty or too short, don't make the API call
+    if (!query || query.length < 3) return null;
+
     const url = `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
       search: query,
       key: this.smartyKey,
