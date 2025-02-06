@@ -4,16 +4,12 @@ const SMARTY_WEBSITE_KEYS = {
   PDD: "17448045555816402",
 };
 
-// Debounce helper function
+// Simple debounce function
 function debounce(func, wait) {
   let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
+  return (...args) => {
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
 
@@ -104,7 +100,7 @@ class FFEP {
 
   async handleInput(e) {
     const query = e.target.value;
-    console.log("Input value:", query);
+    // console.log("Input value:", query);
     if (query.length < 3) {
       this.hideSuggestions();
       return;
@@ -115,12 +111,12 @@ class FFEP {
       const suggestions = await this.debouncedFetchSuggestions(query);
       if (suggestions) {
         // Check if suggestions were returned (might be null if debounced)
-        console.log("Received suggestions:", suggestions);
+        // console.log("Received suggestions:", suggestions);
         this.suggestions = suggestions;
         this.showSuggestions();
       }
     } catch (error) {
-      console.error("Error fetching suggestions:", error);
+      // console.error("Error fetching suggestions:", error);
     }
   }
 
@@ -133,24 +129,24 @@ class FFEP {
       key: this.smartyKey,
       source: "all",
     })}`;
-    console.log("Fetching from URL:", url);
+    // console.log("Fetching from URL:", url);
 
     const response = await fetch(url);
-    console.log("Response status:", response.status);
+    // console.log("Response status:", response.status);
 
     if (!response.ok) {
       throw new Error("Failed to fetch suggestions");
     }
 
     const data = await response.json();
-    console.log("Raw API response:", data);
+    // console.log("Raw API response:", data);
     return data.suggestions || [];
   }
 
   showSuggestions() {
-    console.log("Showing suggestions:", this.suggestions);
+    // console.log("Showing suggestions:", this.suggestions);
     if (!this.suggestions.length) {
-      console.log("No suggestions to show, hiding container");
+      // console.log("No suggestions to show, hiding container");
       this.hideSuggestions();
       return;
     }
@@ -172,9 +168,9 @@ class FFEP {
       )
       .join("");
 
-    console.log("Setting innerHTML:", html);
+    // console.log("Setting innerHTML:", html);
     this.autocompleteContainer.innerHTML = html;
-    console.log("Setting display to block");
+    // console.log("Setting display to block");
     this.autocompleteContainer.style.display = "block";
     this.isAutocompleteVisible = true;
 
