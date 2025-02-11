@@ -21,6 +21,7 @@ class FFEP {
     this.suggestions = [];
     this.selectedIndex = -1;
     this.isAutocompleteVisible = false;
+    this.apiCallCount = 0; // Add counter for API calls
     // Determine which key to use based on hostname
     const hostname = window.location.hostname;
     this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
@@ -129,7 +130,9 @@ class FFEP {
       key: this.smartyKey,
       source: "all",
     })}`;
-    // console.log("Fetching from URL:", url);
+
+    this.apiCallCount++; // Increment the counter
+    console.log(`API calls made: ${this.apiCallCount}`);
 
     const response = await fetch(url);
     // console.log("Response status:", response.status);

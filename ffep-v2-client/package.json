@@ -4,6 +4,14 @@
   "description": "Fast Form Entry Point - Client Side Version",
   "main": "src/ffep.js",
   "scripts": {
-    "start": "python3 -m http.server 8000"
+    "start": "python3 -m http.server 8000",
+    "build": "node build.js",
+    "build:prod": "NODE_ENV=production node build.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.20.0"
   }
 }
