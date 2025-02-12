@@ -40,14 +40,14 @@ class FFEP {
     // Find the FFEP form
     this.form = document.querySelector('form[data-ffep="form"]');
     if (!this.form) {
-      console.error("FFEP form not found");
+      console.error("data-ffep='form' element not found");
       return;
     }
 
     // Find the address input
     this.addressInput = this.form.querySelector('[data-ffep="address"]');
     if (!this.addressInput) {
-      console.error("Address input not found");
+      // console.error("Address input not found");
       return;
     }
 
@@ -59,7 +59,7 @@ class FFEP {
     // Find existing autocomplete container created in Webflow
     this.autocompleteContainer = document.querySelector(".ffep-autocomplete");
     if (!this.autocompleteContainer) {
-      console.error("Autocomplete container with class 'ffep-autocomplete' not found");
+      // console.error("Autocomplete container with class 'ffep-autocomplete' not found");
       return;
     }
 
@@ -107,7 +107,7 @@ class FFEP {
 
   async handleInput(e) {
     const query = e.target.value;
-    console.log("Input value:", query);
+    // console.log("Input value:", query);
     if (query.length < 3) {
       this.hideSuggestions();
       return;
@@ -116,13 +116,13 @@ class FFEP {
     try {
       // Use the debounced version for API calls
       const suggestions = await this.debouncedFetchSuggestions(query);
-      console.log("Received suggestions:", suggestions);
+      // console.log("Received suggestions:", suggestions);
       if (suggestions) {
         this.suggestions = suggestions;
         this.showSuggestions();
       }
     } catch (error) {
-      console.error("Error fetching suggestions:", error);
+      // console.error("Error fetching suggestions:", error);
     }
   }
 
@@ -137,31 +137,31 @@ class FFEP {
     })}`;
 
     this.apiCallCount++; // Increment the counter
-    console.log(`API calls made: ${this.apiCallCount}`);
-    console.log("Fetching suggestions from URL:", url);
+    // console.log(`API calls made: ${this.apiCallCount}`);
+    // console.log("Fetching suggestions from URL:", url);
 
     const response = await fetch(url);
-    console.log("Response status:", response.status);
+    // console.log("Response status:", response.status);
 
     if (!response.ok) {
       throw new Error("Failed to fetch suggestions");
     }
 
     const data = await response.json();
-    console.log("Raw API response:", data);
+    // console.log("Raw API response:", data);
     return data.suggestions || [];
   }
 
   showSuggestions() {
-    console.log("Showing suggestions:", this.suggestions);
+    // console.log("Showing suggestions:", this.suggestions);
     if (!this.suggestions.length) {
-      console.log("No suggestions to show, hiding container");
+      // console.log("No suggestions to show, hiding container");
       this.hideSuggestions();
       return;
     }
 
     if (!this.autocompleteContainer) {
-      console.error("Autocomplete container is null!");
+      // console.error("Autocomplete container is null!");
       return;
     }
 
@@ -169,7 +169,6 @@ class FFEP {
       .map(
         (suggestion, index) => `
         <div class="ffep-suggestion ${index === this.selectedIndex ? "selected" : ""}"
-             style="padding: 8px 12px; cursor: pointer; hover: background-color: #f5f5f5;"
              data-index="${index}">
           ${suggestion.street_line}, ${suggestion.city}, ${suggestion.state} ${suggestion.zipcode}
         </div>
@@ -177,9 +176,9 @@ class FFEP {
       )
       .join("");
 
-    console.log("Generated HTML:", html);
+    // console.log("Generated HTML:", html);
     this.autocompleteContainer.innerHTML = html;
-    console.log("Setting display to block");
+    // console.log("Setting display to block");
     this.autocompleteContainer.style.display = "block";
     this.isAutocompleteVisible = true;
 
@@ -232,16 +231,10 @@ class FFEP {
   highlightSuggestion() {
     const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
     suggestions.forEach((el, index) => {
-      el.style.backgroundColor = index === this.selectedIndex ? "#f5f5f5" : "";
+      if (index === this.selectedIndex) {
+        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
     });
-
-    // Scroll selected item into view if needed
-    if (this.selectedIndex >= 0) {
-      suggestions[this.selectedIndex].scrollIntoView({
-        block: "nearest",
-        behavior: "smooth",
-      });
-    }
   }
 
   selectSuggestion(index) {
