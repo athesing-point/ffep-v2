@@ -56,28 +56,13 @@ class FFEP {
   }
 
   setupAutocomplete() {
+    aaaa;
     // Find existing autocomplete container created in Webflow
     this.autocompleteContainer = document.querySelector(".ffep-autocomplete");
     if (!this.autocompleteContainer) {
       // console.error("Autocomplete container with class 'ffep-autocomplete' not found");
       return;
     }
-
-    /* Required Webflow styles for .ffep-autocomplete:
-     * Position: Absolute
-     * Display: None (initial state)
-     * Width: 100%
-     * Max Height: 200px
-     * Background: White
-     * Border: 1px solid #ddd
-     * Border Radius: 0 0 4px 4px
-     * Box Shadow: 0 2px 4px rgba(0,0,0,0.1)
-     * Z-Index: 1000
-     * Overflow-Y: Auto
-     *
-     * Parent container (.ffep-autocomplete's parent) needs:
-     * Position: Relative
-     */
 
     // Setup input event listeners
     this.addressInput.addEventListener("input", this.handleInput.bind(this));
