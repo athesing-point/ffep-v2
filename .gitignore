@@ -1,3 +1,4 @@
 .cursor
 .cursorignore
 ffep_old
+/ffep-v2-client/node_modules
