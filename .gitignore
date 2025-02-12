@@ -1,4 +1,5 @@
 .cursor
 .cursorignore
 ffep_old
-/ffep-v2-client/node_modules
+pdc-local
+ffep-v2-client/node_modules
