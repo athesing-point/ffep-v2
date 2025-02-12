@@ -56,7 +56,6 @@ class FFEP {
   }
 
   setupAutocomplete() {
-    aaaa;
     // Find existing autocomplete container created in Webflow
     this.autocompleteContainer = document.querySelector(".ffep-autocomplete");
     if (!this.autocompleteContainer) {

@@ -8,6 +8,7 @@
     "start": "python3 -m http.server 8000",
     "build": "bun run build.js",
     "build:prod": "NODE_ENV=production bun run build.js",
+    "build:prod:watch": "NODE_ENV=production bun run build.js --watch",
     "dev": "bun run build.js --watch",
     "clean": "rm -rf dist/*",
     "prebuild": "bun run clean"
