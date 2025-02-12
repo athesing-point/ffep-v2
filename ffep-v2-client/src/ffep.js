@@ -33,7 +33,7 @@ class FFEP {
     this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
 
     // Debounce the API calls
-    this.debouncedFetchSuggestions = debounce(this.fetchSuggestions.bind(this), 300);
+    this.debouncedFetchSuggestions = debounce(this.fetchSuggestions.bind(this), 200);
   }
 
   init() {
