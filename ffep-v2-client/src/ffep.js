@@ -4,8 +4,8 @@ const SMARTY_WEBSITE_KEYS = {
   PDD: "17448045555816402",
 };
 
-// Simple debounce function
-function debounce(func, wait) {
+// Enhanced debounce function with variable wait time
+function debounce(func, getWaitTime) {
   let timeout;
   return function executedFunction(...args) {
     return new Promise((resolve) => {
@@ -14,6 +14,7 @@ function debounce(func, wait) {
         resolve(await func.apply(this, args));
       };
       clearTimeout(timeout);
+      const wait = typeof getWaitTime === "function" ? getWaitTime(...args) : getWaitTime;
       timeout = setTimeout(later, wait);
     });
   };
@@ -27,13 +28,101 @@ class FFEP {
     this.suggestions = [];
     this.selectedIndex = -1;
     this.isAutocompleteVisible = false;
-    this.apiCallCount = 0; // Add counter for API calls
-    // Determine which key to use based on hostname
+    this.apiCallCount = 0;
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
+    this.cacheErrors = 0;
+    this.lastQuery = "";
+    // Remove Map-based cache
+    this.CACHE_PREFIX = "ffep_cache_";
+    this.MAX_CACHE_ITEMS = 50;
+
+    // Initialize cache cleanup
+    this.cleanupCache();
+    console.log("FFEP Cache Initialized");
+
     const hostname = window.location.hostname;
     this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
 
-    // Debounce the API calls
-    this.debouncedFetchSuggestions = debounce(this.fetchSuggestions.bind(this), 200);
+    this.debouncedFetchSuggestions = debounce(this.fetchSuggestions.bind(this), (query) => (query.length <= 4 ? 50 : 200));
+  }
+
+  // Add cache management methods
+  cleanupCache() {
+    try {
+      const beforeCount = this.getCacheKeys().length;
+      const cacheKeys = this.getCacheKeys();
+      if (cacheKeys.length > this.MAX_CACHE_ITEMS) {
+        // Remove oldest items to maintain size limit
+        const keysToRemove = cacheKeys.slice(0, cacheKeys.length - this.MAX_CACHE_ITEMS);
+        keysToRemove.forEach((key) => sessionStorage.removeItem(key));
+        console.log(`Cache Cleanup: Removed ${keysToRemove.length} items. Before: ${beforeCount}, After: ${this.getCacheKeys().length}`);
+      }
+    } catch (error) {
+      console.warn("Cache cleanup failed:", error);
+      this.cacheErrors++;
+    }
+  }
+
+  getCacheKeys() {
+    return Object.keys(sessionStorage)
+      .filter((key) => key.startsWith(this.CACHE_PREFIX))
+      .sort((a, b) => {
+        const timeA = JSON.parse(sessionStorage.getItem(a))?.timestamp || 0;
+        const timeB = JSON.parse(sessionStorage.getItem(b))?.timestamp || 0;
+        return timeA - timeB;
+      });
+  }
+
+  getCachedItem(key) {
+    try {
+      const item = sessionStorage.getItem(this.CACHE_PREFIX + key);
+      if (!item) {
+        console.log(`Cache Miss: ${key}`);
+        this.cacheMisses++;
+        return null;
+      }
+
+      const parsed = JSON.parse(item);
+      // Return null if cache is older than 30 minutes
+      if (Date.now() - parsed.timestamp > 30 * 60 * 1000) {
+        console.log(`Cache Expired: ${key}`);
+        sessionStorage.removeItem(this.CACHE_PREFIX + key);
+        this.cacheMisses++;
+        return null;
+      }
+      console.log(`Cache Hit: ${key}`);
+      this.cacheHits++;
+      return parsed.data;
+    } catch (error) {
+      console.warn("Cache retrieval failed:", error);
+      this.cacheErrors++;
+      return null;
+    }
+  }
+
+  setCachedItem(key, data) {
+    try {
+      const cacheItem = {
+        timestamp: Date.now(),
+        data: data,
+      };
+      sessionStorage.setItem(this.CACHE_PREFIX + key, JSON.stringify(cacheItem));
+      console.log(`Cache Set: ${key}, Items in cache: ${this.getCacheKeys().length}`);
+      this.cleanupCache();
+    } catch (error) {
+      console.warn("Cache storage failed:", error);
+      this.cacheErrors++;
+      // If storage fails (e.g., quota exceeded), clear some old items and try again
+      try {
+        this.cleanupCache();
+        sessionStorage.setItem(this.CACHE_PREFIX + key, JSON.stringify(cacheItem));
+        console.log(`Cache Set Retry Successful: ${key}`);
+      } catch (retryError) {
+        console.warn("Cache storage retry failed:", retryError);
+        this.cacheErrors++;
+      }
+    }
   }
 
   init() {
@@ -111,8 +200,22 @@ class FFEP {
   }
 
   async fetchSuggestions(query) {
-    // If query is empty or too short, don't make the API call
     if (!query || query.length < 3) return null;
+
+    // Check cache first
+    const cacheKey = query.toLowerCase();
+    const cachedResults = this.getCachedItem(cacheKey);
+    if (cachedResults) {
+      console.log(`Using cached results for: ${query}`);
+      return cachedResults;
+    }
+
+    // If this is a longer version of the last query and last query had no results,
+    // we can skip the API call
+    if (this.lastQuery && query.toLowerCase().startsWith(this.lastQuery.toLowerCase()) && this.suggestions.length === 0) {
+      console.log(`Skipping API call for: ${query} (extension of no-result query: ${this.lastQuery})`);
+      return [];
+    }
 
     const url = `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
       search: query,
@@ -120,20 +223,24 @@ class FFEP {
       source: "all",
     })}`;
 
-    this.apiCallCount++; // Increment the counter
-    // console.log(`API calls made: ${this.apiCallCount}`);
-    // console.log("Fetching suggestions from URL:", url);
+    this.apiCallCount++;
+    console.log(`API Call #${this.apiCallCount} for: ${query}`);
+    console.log(`Cache Stats - Hits: ${this.cacheHits}, Misses: ${this.cacheMisses}, Errors: ${this.cacheErrors}`);
+
+    this.lastQuery = query;
 
     const response = await fetch(url);
-    // console.log("Response status:", response.status);
-
     if (!response.ok) {
       throw new Error("Failed to fetch suggestions");
     }
 
     const data = await response.json();
-    // console.log("Raw API response:", data);
-    return data.suggestions || [];
+    const suggestions = data.suggestions || [];
+
+    // Cache the results
+    this.setCachedItem(cacheKey, suggestions);
+
+    return suggestions;
   }
 
   showSuggestions() {
@@ -225,6 +332,14 @@ class FFEP {
     const suggestion = this.suggestions[index];
     this.addressInput.value = `${suggestion.street_line}, ${suggestion.city}, ${suggestion.state} ${suggestion.zipcode}`;
     this.hideSuggestions();
+
+    // Auto submit to URL
+    const addressValue = this.addressInput.value;
+    const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
+    const currentUrl = new URL(window.location.href);
+    const targetTLD = currentUrl.hostname.includes(".dev") ? "dev" : "com";
+    const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
+    window.location.replace(targetUrl);
   }
 
   handleClickOutside(e) {
