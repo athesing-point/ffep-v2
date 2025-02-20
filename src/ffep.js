@@ -260,7 +260,7 @@ class FFEP {
     const html = this.suggestions
       .map(
         (suggestion, index) => `
-        <div class="ffep-suggestion" data-index="${index}">
+        <div class="ffep-suggestion" data-index="${index}" role="option" aria-selected="false">
           ${suggestion.street_line}, ${suggestion.city}, ${suggestion.state} ${suggestion.zipcode}
         </div>
       `
@@ -360,15 +360,14 @@ class FFEP {
 
   handleArrowSelection() {
     const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
-    suggestions.forEach((el) => {
+    suggestions.forEach((el, index) => {
       el.classList.remove("hover");
-    });
-    if (this.selectedIndex !== -1) {
-      const targetElement = suggestions[this.selectedIndex];
-      if (targetElement) {
-        targetElement.classList.add("hover");
+      el.setAttribute("aria-selected", "false");
+      if (index === this.selectedIndex) {
+        el.classList.add("hover");
+        el.setAttribute("aria-selected", "true");
       }
-    }
+    });
   }
 
   selectSuggestion(index) {
