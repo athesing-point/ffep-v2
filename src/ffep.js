@@ -156,6 +156,7 @@ class FFEP {
     this.addressInput.addEventListener("input", this.handleInput.bind(this));
     this.addressInput.addEventListener("keydown", this.handleKeydown.bind(this));
     document.addEventListener("click", this.handleClickOutside.bind(this));
+    this.autocompleteContainer.addEventListener("mouseover", this.handleMouseOver.bind(this));
   }
 
   setupFormHandling() {
@@ -301,7 +302,7 @@ class FFEP {
         } else {
           this.navigateSuggestions(-1);
         }
-        this.highlightSuggestion();
+        this.handleArrowSelection();
         break;
       case "ArrowDown":
         e.preventDefault(); // Prevent page scrolling
@@ -310,7 +311,7 @@ class FFEP {
         } else {
           this.navigateSuggestions(1);
         }
-        this.highlightSuggestion();
+        this.handleArrowSelection();
         break;
       case "Enter":
         if (this.selectedIndex !== -1) {
@@ -347,31 +348,36 @@ class FFEP {
     }
   }
 
-  highlightSuggestion() {
-    if (this.selectedIndex === -1) return;
-
-    const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
-    if (!suggestions.length) return;
-
-    // Remove hover class from all suggestions
-    suggestions.forEach((el) => {
-      el.classList.remove("hover");
-    });
-
-    // Add hover class to selected element
-    const targetElement = suggestions[this.selectedIndex];
-    if (targetElement) {
-      targetElement.classList.add("hover");
+  handleMouseOver(event) {
+    if (event.target.classList.contains("ffep-suggestion")) {
+      const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
+      suggestions.forEach((el) => {
+        el.classList.remove("hover");
+      });
+      event.target.classList.add("hover");
     }
   }
 
-  selectSuggestion() {
+  handleArrowSelection() {
     const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
-    if (this.selectedIndex !== -1 && suggestions[this.selectedIndex]) {
-      const selectedElement = suggestions[this.selectedIndex];
-      const index = parseInt(selectedElement.dataset.index);
-      if (!isNaN(index) && this.suggestions[index]) {
-        const selectedSuggestion = this.suggestions[index];
+    suggestions.forEach((el) => {
+      el.classList.remove("hover");
+    });
+    if (this.selectedIndex !== -1) {
+      const targetElement = suggestions[this.selectedIndex];
+      if (targetElement) {
+        targetElement.classList.add("hover");
+      }
+    }
+  }
+
+  selectSuggestion(index) {
+    const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
+    if (index !== undefined && suggestions[index]) {
+      const selectedElement = suggestions[index];
+      const selectedIndex = parseInt(selectedElement.dataset.index);
+      if (!isNaN(selectedIndex) && this.suggestions[selectedIndex]) {
+        const selectedSuggestion = this.suggestions[selectedIndex];
         this.addressInput.value = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
         this.hideSuggestions();
         this.form.dispatchEvent(new Event("submit"));
