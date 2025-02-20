@@ -207,7 +207,7 @@ class FFEP {
     const cachedResults = this.getCachedItem(cacheKey);
     if (cachedResults) {
       console.log(`Using cached results for: ${query}`);
-      return cachedResults;
+      return cachedResults.slice(0, 5); // Limit to 5 results
     }
 
     // If this is a longer version of the last query and last query had no results,
@@ -235,7 +235,7 @@ class FFEP {
     }
 
     const data = await response.json();
-    const suggestions = data.suggestions || [];
+    const suggestions = (data.suggestions || []).slice(0, 5); // Limit to 5 results
 
     // Cache the results
     this.setCachedItem(cacheKey, suggestions);
@@ -259,8 +259,7 @@ class FFEP {
     const html = this.suggestions
       .map(
         (suggestion, index) => `
-        <div class="ffep-suggestion ${index === this.selectedIndex ? "selected" : ""}"
-             data-index="${index}">
+        <div class="ffep-suggestion" data-index="${index}">
           ${suggestion.street_line}, ${suggestion.city}, ${suggestion.state} ${suggestion.zipcode}
         </div>
       `
@@ -279,11 +278,6 @@ class FFEP {
         const index = parseInt(el.dataset.index);
         this.selectSuggestion(index);
       });
-
-      el.addEventListener("mouseover", () => {
-        this.selectedIndex = parseInt(el.dataset.index);
-        this.highlightSuggestion();
-      });
     });
   }
 
@@ -296,50 +290,93 @@ class FFEP {
   handleKeydown(e) {
     if (!this.isAutocompleteVisible) return;
 
+    const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
+    if (!suggestions.length) return;
+
     switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        this.selectedIndex = Math.min(this.selectedIndex + 1, this.suggestions.length - 1);
+      case "ArrowUp":
+        e.preventDefault(); // Prevent page scrolling
+        if (this.selectedIndex === -1) {
+          this.selectedIndex = suggestions.length - 1;
+        } else {
+          this.navigateSuggestions(-1);
+        }
         this.highlightSuggestion();
         break;
-      case "ArrowUp":
-        e.preventDefault();
-        this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+      case "ArrowDown":
+        e.preventDefault(); // Prevent page scrolling
+        if (this.selectedIndex === -1) {
+          this.selectedIndex = 0;
+        } else {
+          this.navigateSuggestions(1);
+        }
         this.highlightSuggestion();
         break;
       case "Enter":
-        if (this.selectedIndex >= 0) {
-          e.preventDefault();
-          this.selectSuggestion(this.selectedIndex);
+        if (this.selectedIndex !== -1) {
+          e.preventDefault(); // Prevent form submission
+          const selectedElement = suggestions[this.selectedIndex];
+          if (selectedElement) {
+            const index = parseInt(selectedElement.dataset.index);
+            if (!isNaN(index) && this.suggestions[index]) {
+              const selectedSuggestion = this.suggestions[index];
+              this.addressInput.value = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
+              this.hideSuggestions();
+              this.form.dispatchEvent(new Event("submit"));
+            }
+          }
         }
         break;
-      case "Escape":
-        this.hideSuggestions();
+      default:
         break;
     }
   }
 
-  highlightSuggestion() {
+  navigateSuggestions(direction) {
     const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
-    suggestions.forEach((el, index) => {
-      if (index === this.selectedIndex) {
-        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      }
-    });
+    if (!suggestions.length) return;
+
+    this.selectedIndex += direction;
+
+    if (this.selectedIndex < 0) {
+      this.selectedIndex = suggestions.length - 1;
+    }
+
+    if (this.selectedIndex >= suggestions.length) {
+      this.selectedIndex = 0;
+    }
   }
 
-  selectSuggestion(index) {
-    const suggestion = this.suggestions[index];
-    this.addressInput.value = `${suggestion.street_line}, ${suggestion.city}, ${suggestion.state} ${suggestion.zipcode}`;
-    this.hideSuggestions();
+  highlightSuggestion() {
+    if (this.selectedIndex === -1) return;
 
-    // Auto submit to URL
-    const addressValue = this.addressInput.value;
-    const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
-    const currentUrl = new URL(window.location.href);
-    const targetTLD = currentUrl.hostname.includes(".dev") ? "dev" : "com";
-    const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
-    window.location.replace(targetUrl);
+    const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
+    if (!suggestions.length) return;
+
+    // Remove hover class from all suggestions
+    suggestions.forEach((el) => {
+      el.classList.remove("hover");
+    });
+
+    // Add hover class to selected element
+    const targetElement = suggestions[this.selectedIndex];
+    if (targetElement) {
+      targetElement.classList.add("hover");
+    }
+  }
+
+  selectSuggestion() {
+    const suggestions = this.autocompleteContainer.querySelectorAll(".ffep-suggestion");
+    if (this.selectedIndex !== -1 && suggestions[this.selectedIndex]) {
+      const selectedElement = suggestions[this.selectedIndex];
+      const index = parseInt(selectedElement.dataset.index);
+      if (!isNaN(index) && this.suggestions[index]) {
+        const selectedSuggestion = this.suggestions[index];
+        this.addressInput.value = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
+        this.hideSuggestions();
+        this.form.dispatchEvent(new Event("submit"));
+      }
+    }
   }
 
   handleClickOutside(e) {
