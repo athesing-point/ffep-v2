@@ -1,6 +1,6 @@
 # FFEP Client-Side
 
-A lightweight, zero-dependency address autocomplete component for PDC aiming to replace the original FFEP.js version.
+A lightweight, zero-dependency address autocomplete component for PDC aiming to replace the original FFEP.js version (ESBuild used for building /dist version of code.)
 
 ## Features
 
