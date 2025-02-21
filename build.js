@@ -1,4 +1,4 @@
-import { build } from "bun";
+import { build } from "esbuild";
 import { statSync } from "node:fs";
 
 const isWatch = process.argv.includes("--watch");
