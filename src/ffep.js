@@ -155,6 +155,7 @@ class FFEP {
     // Setup input event listeners
     this.addressInput.addEventListener("input", this.handleInput.bind(this));
     this.addressInput.addEventListener("keydown", this.handleKeydown.bind(this));
+    this.addressInput.addEventListener("focus", this.handleFocus.bind(this));
     document.addEventListener("click", this.handleClickOutside.bind(this));
     this.autocompleteContainer.addEventListener("mouseover", this.handleMouseOver.bind(this));
   }
@@ -387,6 +388,32 @@ class FFEP {
   handleClickOutside(e) {
     if (!this.autocompleteContainer.contains(e.target) && e.target !== this.addressInput) {
       this.hideSuggestions();
+    }
+  }
+
+  async handleFocus(e) {
+    const query = e.target.value;
+    if (query.length < 3) {
+      return;
+    }
+
+    // Check if we already have suggestions visible
+    if (this.isAutocompleteVisible) {
+      return;
+    }
+
+    try {
+      // Check cache for current input value
+      const cacheKey = query.toLowerCase();
+      const cachedResults = this.getCachedItem(cacheKey);
+
+      if (cachedResults && cachedResults.length > 0) {
+        console.log(`Reshowing cached results for: ${query} on focus`);
+        this.suggestions = cachedResults;
+        this.showSuggestions();
+      }
+    } catch (error) {
+      console.error("Error fetching cached suggestions on focus:", error);
     }
   }
 }

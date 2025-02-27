@@ -172,3 +172,6 @@ out
 
 # Finder (MacOS) folder config
 .DS_Store
+
+talking-points.md
+CLAUDE.md
