@@ -358,9 +358,15 @@ class FFEP {
             const index = parseInt(selectedElement.dataset.index);
             if (!isNaN(index) && this.suggestions[index]) {
               const selectedSuggestion = this.suggestions[index];
-              this.addressInput.value = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
+              const addressValue = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
+              this.addressInput.value = addressValue;
               this.hideSuggestions();
-              this.form.dispatchEvent(new Event("submit"));
+
+              // Direct URL navigation
+              const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
+              const targetTLD = window.location.hostname.includes(".dev") ? "dev" : "com";
+              const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
+              window.location.replace(targetUrl);
             }
           }
         }
@@ -414,9 +420,15 @@ class FFEP {
       const selectedIndex = parseInt(selectedElement.dataset.index);
       if (!isNaN(selectedIndex) && this.suggestions[selectedIndex]) {
         const selectedSuggestion = this.suggestions[selectedIndex];
-        this.addressInput.value = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
+        const addressValue = `${selectedSuggestion.street_line}, ${selectedSuggestion.city}, ${selectedSuggestion.state} ${selectedSuggestion.zipcode}`;
+        this.addressInput.value = addressValue;
         this.hideSuggestions();
-        this.form.dispatchEvent(new Event("submit"));
+
+        // Direct URL navigation
+        const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
+        const targetTLD = window.location.hostname.includes(".dev") ? "dev" : "com";
+        const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
+        window.location.replace(targetUrl);
       }
     }
   }
