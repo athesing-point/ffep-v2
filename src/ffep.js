@@ -127,19 +127,15 @@ class FFEP {
   }
 
   init() {
-    // Find the FFEP form
-    this.form = document.querySelector('form[data-ffep="form"]');
-    if (!this.form) {
-      console.error("data-ffep='form' element not found");
+    // Find the address input directly
+    this.addressInput = document.querySelector('[data-ffep="address"]');
+    if (!this.addressInput) {
+      console.error("Input with data-ffep='address' not found");
       return;
     }
 
-    // Find the address input
-    this.addressInput = this.form.querySelector('[data-ffep="address"]');
-    if (!this.addressInput) {
-      // console.error("Address input not found");
-      return;
-    }
+    // Get the parent form if it exists
+    this.form = this.addressInput.closest("form");
 
     // Find the error element
     this.errorElement = document.querySelector(".ffep-error");
@@ -165,8 +161,10 @@ class FFEP {
   }
 
   setupFormHandling() {
-    this.form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const handleSubmit = async (e) => {
+      if (e) {
+        e.preventDefault();
+      }
 
       try {
         // Get the address and encode it properly for both parameters
@@ -187,6 +185,19 @@ class FFEP {
         if (this.errorElement) {
           this.errorElement.style.display = "block";
         }
+      }
+    };
+
+    // If we have a parent form, attach the submit handler to it
+    if (this.form) {
+      this.form.addEventListener("submit", handleSubmit);
+    }
+
+    // Also attach the handler to the input's enter key press
+    this.addressInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !this.isAutocompleteVisible) {
+        e.preventDefault();
+        handleSubmit();
       }
     });
   }
