@@ -34,6 +34,7 @@ class FFEP {
     this.cacheErrors = 0;
     this.lastQuery = "";
     this.errorElement = null;
+    this.submitButton = null;
     // Remove Map-based cache
     this.CACHE_PREFIX = "ffep_cache_";
     this.MAX_CACHE_ITEMS = 50;
@@ -134,8 +135,8 @@ class FFEP {
       return;
     }
 
-    // Get the parent form if it exists
-    this.form = this.addressInput.closest("form");
+    // Find the submit button
+    this.submitButton = document.querySelector("#ffep-submit");
 
     // Find the error element
     this.errorElement = document.querySelector(".ffep-error");
@@ -161,11 +162,7 @@ class FFEP {
   }
 
   setupFormHandling() {
-    const handleSubmit = async (e) => {
-      if (e) {
-        e.preventDefault();
-      }
-
+    const handleSubmit = async () => {
       try {
         // Get the address and encode it properly for both parameters
         const addressValue = this.addressInput.value;
@@ -181,22 +178,26 @@ class FFEP {
         // Immediately redirect without showing form submission
         window.location.replace(targetUrl);
       } catch (error) {
-        console.error("Error during form submission/redirect:", error);
+        console.error("Error during redirect:", error);
         if (this.errorElement) {
           this.errorElement.style.display = "block";
         }
       }
     };
 
-    // If we have a parent form, attach the submit handler to it
-    if (this.form) {
-      this.form.addEventListener("submit", handleSubmit);
+    // Handle submit button click
+    if (this.submitButton) {
+      this.submitButton.addEventListener("click", (e) => {
+        e.preventDefault(); // Prevent the default anchor tag behavior
+        if (!this.isAutocompleteVisible) {
+          handleSubmit();
+        }
+      });
     }
 
-    // Also attach the handler to the input's enter key press
+    // Handle enter key on input
     this.addressInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !this.isAutocompleteVisible) {
-        e.preventDefault();
         handleSubmit();
       }
     });
