@@ -33,6 +33,7 @@ class FFEP {
     this.cacheMisses = 0;
     this.cacheErrors = 0;
     this.lastQuery = "";
+    this.errorElement = null;
     // Remove Map-based cache
     this.CACHE_PREFIX = "ffep_cache_";
     this.MAX_CACHE_ITEMS = 50;
@@ -140,6 +141,9 @@ class FFEP {
       return;
     }
 
+    // Find the error element
+    this.errorElement = document.querySelector(".ffep-error");
+
     this.setupAutocomplete();
     this.setupFormHandling();
   }
@@ -164,19 +168,26 @@ class FFEP {
     this.form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // Get the address and encode it properly for both parameters
-      const addressValue = this.addressInput.value;
-      const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
+      try {
+        // Get the address and encode it properly for both parameters
+        const addressValue = this.addressInput.value;
+        const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
 
-      // Get the current URL to determine the TLD
-      const currentUrl = new URL(window.location.href);
-      const targetTLD = currentUrl.hostname.includes(".dev") ? "dev" : "com";
+        // Get the current URL to determine the TLD
+        const currentUrl = new URL(window.location.href);
+        const targetTLD = currentUrl.hostname.includes(".dev") ? "dev" : "com";
 
-      // Construct URL with both parameters
-      const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
+        // Construct URL with both parameters
+        const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
 
-      // Immediately redirect without showing form submission
-      window.location.replace(targetUrl);
+        // Immediately redirect without showing form submission
+        window.location.replace(targetUrl);
+      } catch (error) {
+        console.error("Error during form submission/redirect:", error);
+        if (this.errorElement) {
+          this.errorElement.style.display = "block";
+        }
+      }
     });
   }
 
@@ -204,45 +215,58 @@ class FFEP {
   async fetchSuggestions(query) {
     if (!query || query.length < 3) return null;
 
-    // Check cache first
-    const cacheKey = query.toLowerCase();
-    const cachedResults = this.getCachedItem(cacheKey);
-    if (cachedResults) {
-      console.log(`Using cached results for: ${query}`);
-      return cachedResults.slice(0, 5); // Limit to 5 results
-    }
+    try {
+      // Check cache first
+      const cacheKey = query.toLowerCase();
+      const cachedResults = this.getCachedItem(cacheKey);
+      if (cachedResults) {
+        console.log(`Using cached results for: ${query}`);
+        return cachedResults.slice(0, 5); // Limit to 5 results
+      }
 
-    // If this is a longer version of the last query and last query had no results,
-    // we can skip the API call
-    if (this.lastQuery && query.toLowerCase().startsWith(this.lastQuery.toLowerCase()) && this.suggestions.length === 0) {
-      console.log(`Skipping API call for: ${query} (extension of no-result query: ${this.lastQuery})`);
+      // If this is a longer version of the last query and last query had no results,
+      // we can skip the API call
+      if (this.lastQuery && query.toLowerCase().startsWith(this.lastQuery.toLowerCase()) && this.suggestions.length === 0) {
+        console.log(`Skipping API call for: ${query} (extension of no-result query: ${this.lastQuery})`);
+        return [];
+      }
+
+      const url = `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
+        search: query,
+        key: this.smartyKey,
+        source: "all",
+      })}`;
+
+      this.apiCallCount++;
+      console.log(`API Call #${this.apiCallCount} for: ${query}`);
+      console.log(`Cache Stats - Hits: ${this.cacheHits}, Misses: ${this.cacheMisses}, Errors: ${this.cacheErrors}`);
+
+      this.lastQuery = query;
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch suggestions");
+      }
+
+      const data = await response.json();
+      const suggestions = (data.suggestions || []).slice(0, 5); // Limit to 5 results
+
+      // Cache the results
+      this.setCachedItem(cacheKey, suggestions);
+
+      // Hide error element if it was previously shown
+      if (this.errorElement) {
+        this.errorElement.style.display = "none";
+      }
+
+      return suggestions;
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      if (this.errorElement) {
+        this.errorElement.style.display = "block";
+      }
       return [];
     }
-
-    const url = `https://us-autocomplete-pro.api.smartystreets.com/lookup?${new URLSearchParams({
-      search: query,
-      key: this.smartyKey,
-      source: "all",
-    })}`;
-
-    this.apiCallCount++;
-    console.log(`API Call #${this.apiCallCount} for: ${query}`);
-    console.log(`Cache Stats - Hits: ${this.cacheHits}, Misses: ${this.cacheMisses}, Errors: ${this.cacheErrors}`);
-
-    this.lastQuery = query;
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Failed to fetch suggestions");
-    }
-
-    const data = await response.json();
-    const suggestions = (data.suggestions || []).slice(0, 5); // Limit to 5 results
-
-    // Cache the results
-    this.setCachedItem(cacheKey, suggestions);
-
-    return suggestions;
   }
 
   showSuggestions() {
