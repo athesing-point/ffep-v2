@@ -4,6 +4,14 @@ const SMARTY_WEBSITE_KEYS = {
   PDD: "17448045555816402",
 };
 
+// Error types for better error tracking
+const ErrorTypes = {
+  INITIALIZATION: "FFEP_INITIALIZATION_ERROR",
+  API: "FFEP_API_ERROR",
+  CACHE: "FFEP_CACHE_ERROR",
+  FORM_SUBMISSION: "FFEP_FORM_SUBMISSION_ERROR",
+};
+
 // const ErrorMessage = {
 //   // NO_RESULTS: "No results found",
 //   API_ERROR: "An error occurred while fetching address suggestions",
@@ -40,13 +48,12 @@ class FFEP {
     this.lastQuery = "";
     this.errorElement = null;
     this.submitButton = null;
-    // Remove Map-based cache
     this.CACHE_PREFIX = "ffep_cache_";
     this.MAX_CACHE_ITEMS = 50;
 
     // Initialize cache cleanup
     this.cleanupCache();
-    console.log("FFEP Cache Initialized");
+    // console.log("FFEP Cache Initialized");
 
     const hostname = window.location.hostname;
     this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
@@ -63,9 +70,15 @@ class FFEP {
         // Remove oldest items to maintain size limit
         const keysToRemove = cacheKeys.slice(0, cacheKeys.length - this.MAX_CACHE_ITEMS);
         keysToRemove.forEach((key) => sessionStorage.removeItem(key));
-        console.log(`Cache Cleanup: Removed ${keysToRemove.length} items. Before: ${beforeCount}, After: ${this.getCacheKeys().length}`);
+        // console.log(`Cache Cleanup: Removed ${keysToRemove.length} items. Before: ${beforeCount}, After: ${this.getCacheKeys().length}`);
       }
     } catch (error) {
+      error.name = ErrorTypes.CACHE;
+      error.metadata = {
+        cacheSize: this.getCacheKeys().length,
+        cacheErrors: this.cacheErrors,
+      };
+      Bugsnag.notify(error);
       console.warn("Cache cleanup failed:", error);
       this.cacheErrors++;
     }
@@ -85,7 +98,7 @@ class FFEP {
     try {
       const item = sessionStorage.getItem(this.CACHE_PREFIX + key);
       if (!item) {
-        console.log(`Cache Miss: ${key}`);
+        // console.log(`Cache Miss: ${key}`);
         this.cacheMisses++;
         return null;
       }
@@ -93,7 +106,7 @@ class FFEP {
       const parsed = JSON.parse(item);
       // Return null if cache is older than 30 minutes
       if (Date.now() - parsed.timestamp > 30 * 60 * 1000) {
-        console.log(`Cache Expired: ${key}`);
+        // console.log(`Cache Expired: ${key}`);
         sessionStorage.removeItem(this.CACHE_PREFIX + key);
         this.cacheMisses++;
         return null;
@@ -115,18 +128,18 @@ class FFEP {
         data: data,
       };
       sessionStorage.setItem(this.CACHE_PREFIX + key, JSON.stringify(cacheItem));
-      console.log(`Cache Set: ${key}, Items in cache: ${this.getCacheKeys().length}`);
+      // console.log(`Cache Set: ${key}, Items in cache: ${this.getCacheKeys().length}`);
       this.cleanupCache();
     } catch (error) {
-      console.warn("Cache storage failed:", error);
+      // console.warn("Cache storage failed:", error);
       this.cacheErrors++;
       // If storage fails (e.g., quota exceeded), clear some old items and try again
       try {
         this.cleanupCache();
         sessionStorage.setItem(this.CACHE_PREFIX + key, JSON.stringify(cacheItem));
-        console.log(`Cache Set Retry Successful: ${key}`);
+        // console.log(`Cache Set Retry Successful: ${key}`);
       } catch (retryError) {
-        console.warn("Cache storage retry failed:", retryError);
+        // console.warn("Cache storage retry failed:", retryError);
         this.cacheErrors++;
       }
     }
@@ -136,7 +149,10 @@ class FFEP {
     // Find the address input directly
     this.addressInput = document.querySelector('[data-ffep="address"]');
     if (!this.addressInput) {
-      console.error("Input with data-ffep='address' not found");
+      const error = new Error('Input with data-ffep="address" not found');
+      error.name = ErrorTypes.INITIALIZATION;
+      Bugsnag.notify(error);
+      console.error(error);
       return;
     }
 
@@ -144,7 +160,7 @@ class FFEP {
     this.submitButton = document.querySelector("#ffep-submit");
 
     // Find the error element
-    this.errorElement = document.querySelector(".ffep-error");
+    this.errorElement = document.querySelector(".field-error");
 
     this.setupAutocomplete();
     this.setupFormHandling();
@@ -183,6 +199,12 @@ class FFEP {
         // Immediately redirect without showing form submission
         window.location.replace(targetUrl);
       } catch (error) {
+        error.name = ErrorTypes.FORM_SUBMISSION;
+        error.metadata = {
+          addressValue: this.addressInput.value,
+          currentUrl: window.location.href,
+        };
+        Bugsnag.notify(error);
         console.error("Error during redirect:", error);
         if (this.errorElement) {
           this.errorElement.style.display = "block";
@@ -237,14 +259,14 @@ class FFEP {
       const cacheKey = query.toLowerCase();
       const cachedResults = this.getCachedItem(cacheKey);
       if (cachedResults) {
-        console.log(`Using cached results for: ${query}`);
+        // console.log(`Using cached results for: ${query}`);
         return cachedResults.slice(0, 5); // Limit to 5 results
       }
 
       // If this is a longer version of the last query and last query had no results,
       // we can skip the API call
       if (this.lastQuery && query.toLowerCase().startsWith(this.lastQuery.toLowerCase()) && this.suggestions.length === 0) {
-        console.log(`Skipping API call for: ${query} (extension of no-result query: ${this.lastQuery})`);
+        // console.log(`Skipping API call for: ${query} (extension of no-result query: ${this.lastQuery})`);
         return [];
       }
 
@@ -255,14 +277,22 @@ class FFEP {
       })}`;
 
       this.apiCallCount++;
-      console.log(`API Call #${this.apiCallCount} for: ${query}`);
-      console.log(`Cache Stats - Hits: ${this.cacheHits}, Misses: ${this.cacheMisses}, Errors: ${this.cacheErrors}`);
+      // console.log(`API Call #${this.apiCallCount} for: ${query}`);
+      // console.log(`Cache Stats - Hits: ${this.cacheHits}, Misses: ${this.cacheMisses}, Errors: ${this.cacheErrors}`);
 
       this.lastQuery = query;
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error("Failed to fetch suggestions");
+        const error = new Error(`Failed to fetch suggestions: ${response.status} ${response.statusText}`);
+        error.name = ErrorTypes.API;
+        error.metadata = {
+          status: response.status,
+          url: url,
+          apiCallCount: this.apiCallCount,
+        };
+        Bugsnag.notify(error);
+        throw error;
       }
 
       const data = await response.json();
@@ -278,6 +308,11 @@ class FFEP {
 
       return suggestions;
     } catch (error) {
+      // Ensure error is properly tagged if not already
+      if (!error.name) {
+        error.name = ErrorTypes.API;
+      }
+      Bugsnag.notify(error);
       console.error("Error fetching suggestions:", error);
       if (this.errorElement) {
         this.errorElement.style.display = "block";
