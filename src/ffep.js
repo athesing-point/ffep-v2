@@ -11,12 +11,6 @@ const ErrorTypes = {
   CACHE: "FFEP_CACHE_ERROR",
   FORM_SUBMISSION: "FFEP_FORM_SUBMISSION_ERROR",
 };
-
-// const ErrorMessage = {
-//   // NO_RESULTS: "No results found",
-//   API_ERROR: "An error occurred while fetching address suggestions",
-// };
-
 // Enhanced debounce function with variable wait time
 function debounce(func, getWaitTime) {
   let timeout;
