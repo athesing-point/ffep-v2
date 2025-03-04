@@ -4,6 +4,11 @@ const SMARTY_WEBSITE_KEYS = {
   PDD: "17448045555816402",
 };
 
+// const ErrorMessage = {
+//   // NO_RESULTS: "No results found",
+//   API_ERROR: "An error occurred while fetching address suggestions",
+// };
+
 // Enhanced debounce function with variable wait time
 function debounce(func, getWaitTime) {
   let timeout;

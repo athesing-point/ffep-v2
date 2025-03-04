@@ -1,4 +1,4 @@
-import { statSync } from "node:fs";
+import { statSync, watch } from "node:fs";
 
 const isWatch = process.argv.includes("--watch");
 const isProd = process.env.NODE_ENV === "production" || !isWatch;
@@ -44,8 +44,8 @@ async function runBuild() {
     };
 
     if (isWatch) {
-      // Use Bun's built-in watch mode
-      const build = Bun.build(buildOptions);
+      // Initial build
+      await Bun.build(buildOptions);
 
       // Setup watch callback
       const reportStats = () => {
@@ -60,19 +60,27 @@ async function runBuild() {
         }
       };
 
-      // Watch for file changes
-      const watcher = Bun.watch("./src");
-      watcher.onEvent = async (event) => {
-        if (event.type === "create" || event.type === "update") {
-          await Bun.build(buildOptions);
-          reportStats();
-        }
-      };
-
-      // Initial build report
-      await build;
+      // Report initial build stats
       reportStats();
       console.log("👀 Watching for changes in src directory...");
+
+      // Watch for file changes using Node's fs.watch
+      let debounceTimer;
+      watch("./src", { recursive: true }, async (eventType, filename) => {
+        if (filename && filename.endsWith(".js")) {
+          // Debounce the build to prevent multiple rapid builds
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(async () => {
+            console.log(`📝 File changed: ${filename}`);
+            try {
+              await Bun.build(buildOptions);
+              reportStats();
+            } catch (error) {
+              console.error("🔴 Build failed:", error);
+            }
+          }, 100);
+        }
+      });
     } else {
       // One-time build
       await Bun.build(buildOptions);
