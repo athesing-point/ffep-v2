@@ -1,4 +1,3 @@
-import { build } from "esbuild";
 import { statSync } from "node:fs";
 
 const isWatch = process.argv.includes("--watch");
@@ -15,52 +14,83 @@ function formatSize(bytes) {
   return `${size.toFixed(2)} ${units[unitIndex]}`;
 }
 
+function calculateReduction(originalSize, newSize) {
+  const reduction = ((originalSize - newSize) / originalSize) * 100;
+  return reduction.toFixed(2);
+}
+
 async function runBuild() {
   try {
     console.log(`🔧 Building for ${isProd ? "production" : "development"}...`);
 
-    const result = await build({
+    // Get original file size
+    const originalStats = statSync("./src/ffep.js");
+    const originalSize = originalStats.size;
+    console.log(`📊 Original size: ${formatSize(originalSize)}`);
+
+    const buildOptions = {
       entrypoints: ["./src/ffep.js"],
       outdir: "./dist",
       naming: {
-        entry: "ffep.min.js",
+        entry: "ffep.js",
       },
       minify: isProd,
       sourcemap: isProd ? "none" : "inline",
       target: "browser",
       format: "iife",
-      globalName: "FFEP",
       define: {
         "process.env.NODE_ENV": JSON.stringify(isProd ? "production" : "development"),
       },
-      watch: isWatch
-        ? {
-            onRebuild(error) {
-              if (error) {
-                console.error("🔴 Build failed:", error);
-              } else {
-                const timestamp = new Date().toLocaleTimeString();
-                console.log(`🟢 [${timestamp}] Build succeeded`);
-              }
-            },
-            ignore: ["**/dist/**", "**/node_modules/**"],
-          }
-        : false,
-    });
-
-    // Report bundle size
-    const stats = statSync("./dist/ffep.min.js");
-    console.log(`📦 Bundle size: ${formatSize(stats.size)}`);
-
-    console.log("✨ Build completed successfully!");
+    };
 
     if (isWatch) {
-      console.log("👀 Watching for changes in src directory (ignoring dist)...");
+      // Use Bun's built-in watch mode
+      const build = Bun.build(buildOptions);
+
+      // Setup watch callback
+      const reportStats = () => {
+        try {
+          const newStats = statSync("./dist/ffep.js");
+          const reduction = calculateReduction(originalSize, newStats.size);
+          const timestamp = new Date().toLocaleTimeString();
+          console.log(`🟢 [${timestamp}] Build succeeded`);
+          console.log(`📦 Bundle size: ${formatSize(newStats.size)} (${reduction}% reduction)`);
+        } catch (error) {
+          console.error("Failed to report stats:", error);
+        }
+      };
+
+      // Watch for file changes
+      const watcher = Bun.watch("./src");
+      watcher.onEvent = async (event) => {
+        if (event.type === "create" || event.type === "update") {
+          await Bun.build(buildOptions);
+          reportStats();
+        }
+      };
+
+      // Initial build report
+      await build;
+      reportStats();
+      console.log("👀 Watching for changes in src directory...");
+    } else {
+      // One-time build
+      await Bun.build(buildOptions);
+
+      // Report bundle size and reduction
+      const stats = statSync("./dist/ffep.js");
+      const reduction = calculateReduction(originalSize, stats.size);
+      console.log(`📦 Bundle size: ${formatSize(stats.size)} (${reduction}% reduction)`);
+      console.log("✨ Build completed successfully!");
     }
   } catch (error) {
     console.error("🔴 Build failed:", error);
     process.exit(1);
   }
 }
+
+// Handle process termination
+process.on("SIGTERM", () => process.exit(0));
+process.on("SIGINT", () => process.exit(0));
 
 runBuild();

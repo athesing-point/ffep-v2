@@ -5,20 +5,19 @@
   "main": "src/ffep.js",
   "type": "module",
   "scripts": {
-    "build": "NODE_ENV=production esbuild src/ffep.js --bundle --minify --outfile=dist/ffep.js",
-    "build:prod": "NODE_ENV=production esbuild src/ffep.js --bundle --minify --outfile=dist/ffep.js",
-    "build:prod:watch": "NODE_ENV=production esbuild src/ffep.js --bundle --minify --outfile=dist/ffep.js --watch",
-    "dev": "esbuild src/ffep.js --bundle --outfile=dist/ffep.js --watch",
-    "clean": "rm -rf dist/*",
-    "prebuild": "echo 'Cleaning...' && rm -rf dist/*"
+    "build": "bun build.js",
+    "build:prod": "NODE_ENV=production bun build.js",
+    "build:prod:watch": "NODE_ENV=production bun build.js --watch",
+    "dev": "bun build.js --watch",
+    "clean": "rm -rf dist/*"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devDependencies": {
-    "esbuild": "latest"
-  },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
   }
 }

@@ -10,6 +10,11 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# Package management
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Caches
 
 .cache
@@ -175,3 +180,4 @@ out
 
 talking-points.md
 CLAUDE.md
+.cursor/rules
