@@ -43,9 +43,24 @@ async function runBuild() {
       },
     };
 
+    const build = async () => {
+      const result = await Bun.build(buildOptions);
+
+      // Ensure source map comment is added
+      if (result.success) {
+        const outputPath = "./dist/ffep.js";
+        let content = await Bun.file(outputPath).text();
+        if (!content.includes("sourceMappingURL")) {
+          content += "\n//# sourceMappingURL=ffep.js.map\n";
+          await Bun.write(outputPath, content);
+        }
+      }
+      return result;
+    };
+
     if (isWatch) {
       // Initial build
-      await Bun.build(buildOptions);
+      await build();
 
       // Setup watch callback
       const reportStats = () => {
@@ -73,7 +88,7 @@ async function runBuild() {
           debounceTimer = setTimeout(async () => {
             console.log(`📝 File changed: ${filename}`);
             try {
-              await Bun.build(buildOptions);
+              await build();
               reportStats();
             } catch (error) {
               console.error("🔴 Build failed:", error);
@@ -83,7 +98,7 @@ async function runBuild() {
       });
     } else {
       // One-time build
-      await Bun.build(buildOptions);
+      await build();
 
       // Report bundle size and reduction
       const stats = statSync("./dist/ffep.js");
