@@ -35,7 +35,7 @@ async function runBuild() {
         entry: "ffep.js",
       },
       minify: isProd,
-      sourcemap: isProd ? "none" : "inline",
+      sourcemap: "external",
       target: "browser",
       format: "iife",
       define: {
