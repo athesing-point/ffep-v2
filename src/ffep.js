@@ -105,7 +105,7 @@ class FFEP {
         this.cacheMisses++;
         return null;
       }
-      console.log(`Cache Hit: ${key}`);
+      // console.log(`Cache Hit: ${key}`);
       this.cacheHits++;
       return parsed.data;
     } catch (error) {
