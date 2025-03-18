@@ -190,8 +190,9 @@ class FFEP {
         // Construct URL with both parameters
         const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
 
-        // Immediately redirect without showing form submission
-        window.location.replace(targetUrl);
+        // Replace current state with the original URL before navigating
+        history.replaceState(null, "", window.location.pathname);
+        window.location.assign(targetUrl);
       } catch (error) {
         error.name = ErrorTypes.FORM_SUBMISSION;
         error.metadata = {
@@ -400,7 +401,10 @@ class FFEP {
               const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
               const targetTLD = window.location.hostname.includes(".dev") ? "dev" : "com";
               const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
-              window.location.replace(targetUrl);
+
+              // Replace current state with the original URL before navigating
+              history.replaceState(null, "", window.location.pathname);
+              window.location.assign(targetUrl);
             }
           }
         }
@@ -462,7 +466,10 @@ class FFEP {
         const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
         const targetTLD = window.location.hostname.includes(".dev") ? "dev" : "com";
         const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
-        window.location.replace(targetUrl);
+
+        // Replace current state with the original URL before navigating
+        history.replaceState(null, "", window.location.pathname);
+        window.location.assign(targetUrl);
       }
     }
   }
