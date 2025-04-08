@@ -1,7 +1,7 @@
 // Constants
 const SMARTY_WEBSITE_KEYS = {
-  PDC: "17448046178191022",
-  PDD: "17448045555816402",
+  PDC: "17448048807377486",
+  PDD: "17448048807377486",
 };
 
 // Error types for better error tracking
