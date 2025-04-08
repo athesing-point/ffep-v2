@@ -2,6 +2,7 @@
 const SMARTY_WEBSITE_KEYS = {
   PDC: "17448046178191022",
   PDD: "17448045555816402",
+  SCC: "17448048807377486",
 };
 
 // Error types for better error tracking
@@ -50,7 +51,13 @@ class FFEP {
     // console.log("FFEP Cache Initialized");
 
     const hostname = window.location.hostname;
-    this.smartyKey = hostname.includes(".dev") ? SMARTY_WEBSITE_KEYS.PDD : SMARTY_WEBSITE_KEYS.PDC;
+    if (hostname.includes("scorecredit.webflow.io") || hostname.includes("scorecredit.com")) {
+      this.smartyKey = SMARTY_WEBSITE_KEYS.SCC;
+    } else if (hostname.includes(".dev")) {
+      this.smartyKey = SMARTY_WEBSITE_KEYS.PDD;
+    } else {
+      this.smartyKey = SMARTY_WEBSITE_KEYS.PDC;
+    }
 
     this.debouncedFetchSuggestions = debounce(this.fetchSuggestions.bind(this), (query) => (query.length <= 4 ? 50 : 200));
   }
@@ -185,7 +192,17 @@ class FFEP {
 
         // Get the current URL to determine the TLD
         const currentUrl = new URL(window.location.href);
-        const targetTLD = currentUrl.hostname.includes(".dev") ? "dev" : "com";
+        const hostname = currentUrl.hostname;
+        let targetTLD;
+        if (hostname.includes("scorecredit.webflow.io")) {
+          targetTLD = "dev";
+        } else if (hostname.includes("scorecredit.com")) {
+          targetTLD = "com";
+        } else if (hostname.includes(".dev")) {
+          targetTLD = "dev";
+        } else {
+          targetTLD = "com";
+        }
 
         // Construct URL with both parameters
         const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
@@ -398,7 +415,17 @@ class FFEP {
 
               // Direct URL navigation
               const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
-              const targetTLD = window.location.hostname.includes(".dev") ? "dev" : "com";
+              const hostname = window.location.hostname;
+              let targetTLD;
+              if (hostname.includes("scorecredit.webflow.io")) {
+                targetTLD = "dev";
+              } else if (hostname.includes("scorecredit.com")) {
+                targetTLD = "com";
+              } else if (hostname.includes(".dev")) {
+                targetTLD = "dev";
+              } else {
+                targetTLD = "com";
+              }
               const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
               window.location.replace(targetUrl);
             }
@@ -460,7 +487,17 @@ class FFEP {
 
         // Direct URL navigation
         const encodedAddress = encodeURIComponent(addressValue).replace(/%20/g, "+");
-        const targetTLD = window.location.hostname.includes(".dev") ? "dev" : "com";
+        const hostname = window.location.hostname;
+        let targetTLD;
+        if (hostname.includes("scorecredit.webflow.io")) {
+          targetTLD = "dev";
+        } else if (hostname.includes("scorecredit.com")) {
+          targetTLD = "com";
+        } else if (hostname.includes(".dev")) {
+          targetTLD = "dev";
+        } else {
+          targetTLD = "com";
+        }
         const targetUrl = `https://home.point.${targetTLD}/?Enter+your+home+address=${encodedAddress}&address=${encodedAddress}`;
         window.location.replace(targetUrl);
       }
