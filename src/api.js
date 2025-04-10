@@ -48,15 +48,6 @@ export async function fetchSuggestions(query, smartyKey, cacheManager, options =
     if (!response.ok) {
       const error = new Error(`Failed to fetch suggestions: ${response.status} ${response.statusText}`);
       error.name = ErrorTypes.API;
-      error.metadata = {
-        status: response.status,
-        url: url,
-        apiCallCount: currentApiCallCount,
-        query: query,
-      };
-      if (typeof Bugsnag !== "undefined") {
-        Bugsnag.notify(error);
-      }
       throw error;
     }
 
@@ -77,11 +68,6 @@ export async function fetchSuggestions(query, smartyKey, cacheManager, options =
     // Ensure error is properly tagged if not already
     if (!error.name) {
       error.name = ErrorTypes.API;
-    }
-    if (typeof Bugsnag !== "undefined" && !error.metadata) {
-      // Avoid double reporting if already tagged
-      error.metadata = { query: query, apiCallCount: apiCallCount + 1 }; // Use updated count
-      Bugsnag.notify(error);
     }
     console.error("Error fetching suggestions:", error);
     if (errorElement) {

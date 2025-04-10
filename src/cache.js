@@ -25,13 +25,6 @@ export class CacheManager {
     } catch (error) {
       console.warn("Error retrieving cache keys:", error);
       this.errors++;
-      // Attempt to notify Bugsnag if available
-      if (typeof Bugsnag !== "undefined") {
-        const cacheError = new Error("Failed to retrieve cache keys");
-        cacheError.name = ErrorTypes.CACHE;
-        cacheError.originalError = error;
-        Bugsnag.notify(cacheError);
-      }
       return []; // Return empty array on error
     }
   }
@@ -62,7 +55,6 @@ export class CacheManager {
           } catch (removeError) {
             console.warn(`Failed to remove cache item ${key}:`, removeError);
             this.errors++;
-            // Potentially notify Bugsnag about specific removal error
           }
         });
         // console.log(`Cache Cleanup Complete. Items remaining: ${this.getCacheKeys().length}`);
@@ -70,14 +62,6 @@ export class CacheManager {
     } catch (error) {
       // console.warn("Cache cleanup failed:", error);
       this.errors++;
-      // Notify Bugsnag about cleanup failure
-      if (typeof Bugsnag !== "undefined") {
-        const cacheError = new Error("Cache cleanup process failed");
-        cacheError.name = ErrorTypes.CACHE;
-        cacheError.originalError = error;
-        cacheError.metadata = { cacheSize: this.getCacheKeys().length }; // Add context
-        Bugsnag.notify(cacheError);
-      }
     }
   }
 
@@ -101,10 +85,9 @@ export class CacheManager {
         } catch (removeError) {
           console.warn(`Failed to remove expired cache item ${prefixedKey}:`, removeError);
           this.errors++;
-          // Notify Bugsnag
+          this.misses++; // Treat expired as a miss
+          return null;
         }
-        this.misses++; // Treat expired as a miss
-        return null;
       }
 
       // console.log(`Cache Hit: ${key}`);
@@ -120,13 +103,6 @@ export class CacheManager {
       } catch (removeError) {
         console.warn(`Failed to remove potentially corrupted cache item ${prefixedKey}:`, removeError);
         // Increment error count again or handle differently?
-      }
-      // Notify Bugsnag
-      if (typeof Bugsnag !== "undefined") {
-        const cacheError = new Error(`Cache retrieval failed for key: ${key}`);
-        cacheError.name = ErrorTypes.CACHE;
-        cacheError.originalError = error;
-        Bugsnag.notify(cacheError);
       }
       return null; // Return null on error
     }
@@ -148,16 +124,6 @@ export class CacheManager {
     } catch (error) {
       // console.warn(`Cache storage failed for key ${key}:`, error);
       this.errors++;
-
-      // Notify Bugsnag about the initial storage failure
-      if (typeof Bugsnag !== "undefined") {
-        const cacheError = new Error(`Cache storage failed for key: ${key}`);
-        cacheError.name = ErrorTypes.CACHE;
-        cacheError.originalError = error;
-        // Add metadata like estimated size if possible
-        cacheError.metadata = { dataSize: JSON.stringify(cacheItem).length };
-        Bugsnag.notify(cacheError);
-      }
 
       // Handle potential quota exceeded error
       if (error.name === "QuotaExceededError" || (error.code && (error.code === 22 || error.code === 1014))) {
@@ -185,13 +151,6 @@ export class CacheManager {
         } catch (retryError) {
           // console.warn(`Cache storage retry failed for key ${key}:`, retryError);
           this.errors++; // Increment error count again for the retry failure
-          // Notify Bugsnag about the retry failure
-          if (typeof Bugsnag !== "undefined") {
-            const retryCacheError = new Error(`Cache storage retry failed for key: ${key}`);
-            retryCacheError.name = ErrorTypes.CACHE;
-            retryCacheError.originalError = retryError;
-            Bugsnag.notify(retryCacheError);
-          }
         }
       }
     }

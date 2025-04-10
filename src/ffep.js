@@ -2,7 +2,8 @@ import { SMARTY_WEBSITE_KEYS, ErrorTypes } from "./constants.js";
 import { debounce } from "./utils.js";
 import { CacheManager } from "./cache.js";
 import { fetchSuggestions as apiFetchSuggestions } from "./api.js";
-import { setupAutocomplete as uiSetupAutocomplete, showSuggestions as uiShowSuggestions, hideSuggestions as uiHideSuggestions, selectSuggestion as uiSelectSuggestion } from "./ui.js";
+import { setupAutocomplete as uiSetupAutocomplete, showSuggestions as uiShowSuggestions, hideSuggestions as uiHideSuggestions } from "./ui.js";
+import { setupFormEventListeners } from "./formHandler.js";
 
 class FFEP {
   constructor() {
@@ -69,8 +70,8 @@ class FFEP {
       // console.log("Autocomplete UI setup complete");
     }
 
-    // Setup form submission logic
-    this.setupFormHandling();
+    // Setup form submission logic using the new module
+    setupFormEventListeners(this);
     // console.log("Form handling setup complete");
     // console.log("FFEP Init finished");
   }
@@ -78,43 +79,7 @@ class FFEP {
   handleInitializationError(message) {
     const error = new Error(message);
     error.name = ErrorTypes.INITIALIZATION;
-    if (typeof Bugsnag !== "undefined") {
-      Bugsnag.notify(error);
-    }
     console.error(`[${ErrorTypes.INITIALIZATION}] ${message}`);
-  }
-
-  setupFormHandling() {
-    // console.log("Setting up form handling...");
-    // Handle submit button click
-    if (this.submitButton) {
-      this.submitButton.addEventListener("click", (e) => {
-        e.preventDefault(); // Prevent default anchor tag behavior
-        // console.log("Submit button clicked. Autocomplete visible?", this.isAutocompleteVisible);
-        // Only submit if autocomplete is not showing suggestions
-        if (!this.isAutocompleteVisible) {
-          this.triggerFormSubmit();
-        }
-      });
-    } else {
-      console.warn("Submit button (#ffep-submit) not found. Form submission via button click disabled.");
-    }
-
-    // Handle enter key on input
-    this.addressInput.addEventListener("keydown", (e) => {
-      // console.log(`Keydown on input: ${e.key}. Autocomplete visible? ${this.isAutocompleteVisible}`);
-      // Let the ui.js handleKeydown manage Enter when autocomplete is visible
-      if (this.isAutocompleteVisible) {
-        return; // ui.js keydown handler takes precedence
-      }
-
-      // Handle Enter for submission ONLY when autocomplete is hidden
-      if (e.key === "Enter") {
-        // console.log("Enter pressed while autocomplete hidden. Triggering submit.");
-        e.preventDefault(); // Prevent potential default form submission
-        this.triggerFormSubmit();
-      }
-    });
   }
 
   // Renamed from handleSubmit to clarify role
@@ -145,19 +110,13 @@ class FFEP {
     } catch (error) {
       // console.error("Error during form submission trigger:", error);
       error.name = ErrorTypes.FORM_SUBMISSION;
-      error.metadata = {
-        addressValue: this.addressInput?.value,
-        currentUrl: window.location.href,
-      };
-      if (typeof Bugsnag !== "undefined") {
-        Bugsnag.notify(error);
-      }
       console.error(`[${ErrorTypes.FORM_SUBMISSION}] Error during redirect:`, error);
       // Show generic error to user
       if (this.errorElement) {
         this.errorElement.textContent = "An error occurred. Please try again.";
         this.errorElement.style.display = "block";
       }
+      uiHideSuggestions(this);
     }
   }
 
@@ -215,17 +174,11 @@ class FFEP {
       console.error("Error in fetchAndShowSuggestions orchestration:", error);
       this.suggestions = [];
       uiHideSuggestions(this);
-      // Ensure error is reported if not already done by api.js
-      if (typeof Bugsnag !== "undefined" && !error.metadata) {
-        error.name = error.name || ErrorTypes.API; // Default to API error type
-        error.metadata = { query: query, stage: "orchestration" };
-        Bugsnag.notify(error);
-      }
     }
   }
 
   // Note: Other specific handlers (keydown, focus, clickOutside) are now primarily in ui.js
-  // They call methods like uiShowSuggestions, uiHideSuggestions, uiSelectSuggestion,
+  // They call methods like uiShowSuggestions, uiHideSuggestions, uiSelectSuggestion (which calls triggerFormSubmit),
   // and triggerFormSubmit on the FFEP instance when needed.
 }
 
@@ -240,13 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // console.log("FFEP Initialized successfully and attached to window.FFEPInstance");
   } catch (error) {
     console.error("Critical error during FFEP initialization:", error);
-    // Attempt to report this critical failure
-    if (typeof Bugsnag !== "undefined") {
-      error.name = error.name || ErrorTypes.INITIALIZATION; // Ensure name is set
-      error.metadata = error.metadata || {};
-      error.metadata.phase = "DOMContentLoaded";
-      Bugsnag.notify(error);
-    }
   }
 });
 
